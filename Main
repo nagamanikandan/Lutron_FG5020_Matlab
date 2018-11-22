@@ -1,0 +1,54 @@
+%%
+%Script to log the force data from the Force gauge
+%Author: Nagamanikandan G
+%Date  : 22Nov2018
+% Force gauge Model : Lutron FG 5020
+% Set USB-01 - Switch 1
+
+%%
+
+delete(instrfind)
+close all
+clear all
+clc
+s_force_obj = serial('COM17');
+s_force_obj.InputBufferSize=16;
+s_force_obj.Terminator='CR';    %Terminator Carriage return   
+fopen(s_force_obj);
+%%
+array_force(1)=0;    % measured force
+array_temp(1)=0;     % to log the increment
+temp=1;
+
+figure_force = figure('Name','Force Gauge');
+% title1 = title(sprintf('Dynamixel'));
+% set(title1,'String',sprintf('Position,  = %0.2f',inc_temp));
+
+subplot('Position',  [0.05 0.2 0.4 0.5]);
+hold on;
+plot_present_force=plot(array_temp(1,:),array_force(1,:),'r-',...
+    'LineWidth',2,...
+    'MarkerEdgeColor','r',...
+    'MarkerSize',1);
+mpplot_present_force=plot(array_temp(1,:),array_force(1,:),'o','MarkerEdgeColor','r','MarkerSize',5,'MarkerFaceColor','r');
+plot_present_force_title=title(sprintf('Force'));
+axis([0,1000,-20,30]);
+%legend('force','present position')
+grid on
+xlabel('time (sec)');
+ylabel('force (N)');
+
+while ishandle(figure_force)
+    force_data=fscanf(s_force_obj,'%s');
+    if (strcmp(force_data(2:4),'415'))            % Check for an error free data 
+        array_force(temp)=str2double(force_data(10:end))/100; % To convert the value into an actual unit (scaling factor 100)
+        array_temp(temp)=temp;
+        set(plot_present_force_title,'String',sprintf('Current,  = %0.2d',array_force(temp)));
+        set(plot_present_force, 'Xdata',array_temp(1:temp),'Ydata',array_force(1,1:temp));
+        set(mpplot_present_force, 'Xdata',array_temp(temp),'Ydata',array_force(temp));
+        
+        temp=temp+1;
+        drawnow;
+    end
+    
+end
